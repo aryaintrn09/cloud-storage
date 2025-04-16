@@ -12,14 +12,17 @@ $current_user = get_current_user_data();
 $filter_user = $_GET['user'] ?? null;
 
 // Handle storage limit update
+// Di bagian atas admin.php
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_limit'])) {
     $username = $_POST['username'];
-    $new_limit = (int)$_POST['max_storage'];
-    update_storage_limit($username, $new_limit);
+    $gb = (float)$_POST['max_storage'];
+    update_storage_limit($username, $gb);
+    header("Location: admin.php?updated=1");
+    exit();
 }
 
 // Handle file deletion
-if (isset($_GET['delete'])) {
+if (isset($_GET['delete'])) {   
     $file_id = (int)$_GET['delete'];
     $stmt = $conn->prepare("SELECT filepath FROM files WHERE id = ?");
     $stmt->bind_param("i", $file_id);
@@ -97,8 +100,8 @@ $files = get_all_files($filter_user);
                                 <form method="POST" class="storage-form">
                                     <input type="hidden" name="username" value="<?= htmlspecialchars($user['username']) ?>">
                                     <input type="number" name="max_storage" 
-                                           value="<?= $user['max_storage'] ?>" 
-                                           min="1048576" step="1048576">
+                                        value="<?= round($user['max_storage'] / (1024 * 1024 * 1024)) ?>" 
+                                        min="1" step="0.1"> GB
                                     <button type="submit" name="update_limit" class="btn small">Update</button>
                                 </form>
                             </td>

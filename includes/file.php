@@ -217,24 +217,34 @@ function get_all_users_storage() {
     return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 
-function update_storage_limit($username, $limit) {
+function update_storage_limit($username, $gb) {
     global $conn;
     
+    // Convert GB to bytes
+    $bytes = $gb * 1024 * 1024 * 1024;
+    $bytes = (int)$bytes;
+    
     $stmt = $conn->prepare("UPDATE users SET max_storage = ? WHERE username = ?");
-    $stmt->bind_param("is", $limit, $username);
+    $stmt->bind_param("is", $bytes, $username);
     return $stmt->execute();
 }
 
 function format_size($bytes) {
-    if ($bytes >= 1073741824) {
-        return round($bytes / 1073741824, 2) . ' GB';
+    if ($bytes == 0) {
+        return '0 GB';
     }
-    elseif ($bytes >= 1048576) {
-        return round($bytes / 1048576, 2) . ' MB';
+    
+    $gb = $bytes / (1024 * 1024 * 1024); // Convert to GB
+    
+    // Format angka: 
+    // - 2 desimal jika kurang dari 10 GB
+    // - 1 desimal jika kurang dari 100 GB
+    // - 0 desimal jika lebih dari 100 GB
+    if ($gb < 10) {
+        return round($gb, 2) . ' GB';
+    } elseif ($gb < 100) {
+        return round($gb, 1) . ' GB';
+    } else {
+        return round($gb) . ' GB';
     }
-    elseif ($bytes >= 1024) {
-        return round($bytes / 1024, 2) . ' KB';
-    }
-    return $bytes . ' bytes';
 }
-?>
