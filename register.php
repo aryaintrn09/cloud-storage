@@ -53,7 +53,7 @@ if (isset($_POST['register'])) {
                 <label>Konfirmasi Password:</label>
                 <input type="password" name="confirm_password" required>
             </div>
-            <button type="submit" name="register">Register</button>
+            <button class="btn" type="submit" name="register">Register</button>
         </form>
         <p>Sudah punya akun? <a href="login.php">Login disini</a></p>
     </div>

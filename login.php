@@ -41,7 +41,7 @@ if (isset($_POST['login'])) {
                 <label>Password:</label>
                 <input type="password" name="password" required>
             </div>
-            <button type="submit" name="login">Login</button>
+            <button class="btn" type="submit" name="login">Login</button>
         </form>
         <p>Belum punya akun? <a href="register.php">Daftar disini</a></p>
     </div>
