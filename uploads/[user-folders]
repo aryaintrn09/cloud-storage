@@ -1,3 +1,0 @@
-The directory /cloud-storage-project/cloud-storage-project/htdocs/cloud-storage/uploads/[user-folders] is intended to be a storage location for user-specific folders. As such, it will not contain any files directly. Instead, it will be populated with folders created for each user based on their username when they register and upload files.
-
-This directory is intentionally left blank.
