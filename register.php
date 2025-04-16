@@ -1,79 +1,85 @@
 <?php
-require_once 'includes/config.php';
-require_once 'includes/auth.php';
-
-if (is_logged_in()) {
-    header("Location: index.php");
-    exit();
+session_start();
+if (isset($_SESSION['user_id'])) {
+  header("Location: dashboard.php");
+  exit();
 }
 
-$error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register'])) {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
-    $confirm = $_POST['confirm_password'];
-    
-    if (empty($username) || empty($password)) {
-        $error = "Username and password are required";
-    } elseif ($password !== $confirm) {
-        $error = "Passwords don't match";
-    } elseif (strlen($password) < 6) {
-        $error = "Password must be at least 6 characters";
+require 'includes/db.php';
+
+$error = "";
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+  $username = trim($_POST['username']);
+  $email = trim($_POST['email']);
+  $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+
+  // Validasi
+  if (empty($username) || empty($email) || empty($_POST['password'])) {
+    $error = "Semua field harus diisi.";
+  } else {
+    $check = $conn->prepare("SELECT id FROM users WHERE email = ?");
+    $check->bind_param("s", $email);
+    $check->execute();
+    $check->store_result();
+
+    if ($check->num_rows > 0) {
+      $error = "Email sudah terdaftar.";
     } else {
-        $result = register_user($username, $password);
-        if ($result === true) {
-            header("Location: login.php?registered=1");
-            exit();
-        } else {
-            $error = $result;
-        }
+      $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
+      $stmt->bind_param("sss", $username, $email, $password);
+      $stmt->execute();
+
+      // Buat folder untuk user
+      if (!file_exists("uploads/$username")) {
+        mkdir("uploads/$username", 0777, true);
+      }
+
+      header("Location: index.php");
+      exit();
     }
+  }
 }
 ?>
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Cloud Storage</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Register - Cloud Storage</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-box">
-            <h1>Register</h1>
-            
-            <?php if ($error): ?>
-                <div class="alert error"><?= $error ?></div>
-            <?php endif; ?>
-            
-            <?php if (isset($_GET['registered'])): ?>
-                <div class="alert success">Registration successful! Please login.</div>
-            <?php endif; ?>
-            
-            <form method="POST" class="login-form">
-                <div class="form-group">
-                    <label for="username">Username:</label>
-                    <input type="text" id="username" name="username" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirm_password">Confirm Password:</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required>
-                </div>
-                
-                <button type="submit" name="register" class="btn">Register</button>
-            </form>
-            
-            <div class="register-link">
-                Already have an account? <a href="login.php">Login here</a>
+<body class="bg-light">
+<div class="container">
+  <div class="row justify-content-center align-items-center" style="height:100vh;">
+    <div class="col-md-5">
+      <div class="card shadow-lg">
+        <div class="card-body">
+          <h3 class="text-center mb-4">Register</h3>
+          <?php if ($error): ?>
+            <div class="alert alert-danger"><?= $error ?></div>
+          <?php endif; ?>
+          <form method="post">
+            <div class="mb-3">
+              <label>Username</label>
+              <input type="text" name="username" class="form-control" required>
             </div>
+            <div class="mb-3">
+              <label>Email</label>
+              <input type="email" name="email" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label>Password</label>
+              <input type="password" name="password" class="form-control" required>
+            </div>
+            <button class="btn btn-success w-100">Register</button>
+          </form>
+          <p class="text-center mt-3">
+            Sudah punya akun? <a href="index.php">Login di sini</a>
+          </p>
         </div>
+      </div>
     </div>
+  </div>
+</div>
 </body>
 </html>

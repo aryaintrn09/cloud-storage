@@ -1,60 +1,55 @@
 <?php
-require_once 'includes/config.php';
-require_once 'includes/auth.php';
+session_start();
+require 'includes/db.php';
 
-if (is_logged_in()) {
-    header("Location: index.php");
-    exit();
-}
-
-$error = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login'])) {
-    $username = $_POST['username'];
+if (isset($_POST['login'])) {
+    $username = htmlspecialchars($_POST['username']);
     $password = $_POST['password'];
-    
-    if (login_user($username, $password)) {
-        header("Location: index.php");
-        exit();
+
+    $stmt = $conn->prepare("SELECT * FROM users WHERE username=?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        if (password_verify($password, $row['password'])) {
+            $_SESSION['user_id'] = $row['id'];
+            $_SESSION['username'] = $row['username'];
+            $_SESSION['role'] = $row['role'];
+            header("Location: dashboard.php");
+            exit();
+        } else {
+            $error = "Password salah.";
+        }
     } else {
-        $error = "Invalid username or password";
+        $error = "User tidak ditemukan.";
     }
 }
 ?>
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Cloud Storage</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <link rel="stylesheet" href="assets/bootstrap/bootstrap.min.css">
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-box">
-            <h1>Login</h1>
-            
-            <?php if ($error): ?>
-                <div class="alert error"><?= $error ?></div>
-            <?php endif; ?>
-            
-            <form method="POST" class="login-form">
-                <div class="form-group">
-                    <label for="username">Username:</label>
-                    <input type="text" id="username" name="username" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                
-                <button type="submit" name="login" class="btn">Login</button>
-            </form>
-            
-            <div class="register-link">
-                Don't have an account? <a href="register.php">Register here</a>
-            </div>
-        </div>
+<body class="bg-light">
+  <div class="container mt-5">
+    <div class="row justify-content-center">
+      <div class="col-md-4">
+        <h3 class="text-center">Login</h3>
+        <?php if (isset($error)): ?>
+          <div class="alert alert-danger"><?= $error ?></div>
+        <?php endif; ?>
+        <form method="post">
+          <input type="text" name="username" class="form-control mb-2" placeholder="Username" required>
+          <input type="password" name="password" class="form-control mb-2" placeholder="Password" required>
+          <button type="submit" name="login" class="btn btn-primary w-100">Login</button>
+          <a href="register.php" class="btn btn-link w-100">Register</a>
+        </form>
+      </div>
     </div>
+  </div>
 </body>
 </html>
