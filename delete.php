@@ -1,16 +1,24 @@
 <?php
-session_start();
-include 'includes/file.php';
+require_once 'includes/config.php';
+require_once 'includes/auth.php';
+require_once 'includes/file.php';
 
-if (!isset($_SESSION['user_id'])) {
+if (!isLoggedIn()) {
     header("Location: login.php");
+    exit();
 }
 
 if (isset($_GET['id'])) {
-    if (deleteFile($_GET['id'], $_SESSION['user_id'])) {
-        header("Location: index.php");
+    $file_id = $_GET['id'];
+    $username = $_SESSION['username'];
+    
+    if (deleteFile($file_id, $username)) {
+        header("Location: index.php?delete_success=1");
     } else {
-        echo "Gagal menghapus file!";
+        header("Location: index.php?delete_error=1");
     }
+    exit();
 }
+
+header("Location: index.php");
 ?>
