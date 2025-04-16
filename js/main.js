@@ -50,6 +50,28 @@ function loadFiles() {
       });
     }
   }
+
+  function previewFile(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const url = `uploads/<?= $_SESSION['username'] ?>/${filename}`;
+    let content = "";
+  
+    if (["png", "jpg", "jpeg", "gif"].includes(ext)) {
+      content = `<img src="${url}" class="img-fluid">`;
+    } else if (["pdf"].includes(ext)) {
+      content = `<embed src="${url}" type="application/pdf" width="100%" height="600px">`;
+    } else if (["mp3", "wav"].includes(ext)) {
+      content = `<audio controls src="${url}" class="w-100"></audio>`;
+    } else {
+      content = `<p class="text-muted">Preview tidak tersedia untuk file ini.</p>`;
+    }
+  
+    document.getElementById("previewContent").innerHTML = content;
+    new bootstrap.Modal(document.getElementById('previewModal')).show();
+  }
+  
+  
   
   loadFiles();
+  previewFile(filename);
   

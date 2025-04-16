@@ -7,6 +7,20 @@ $username = $_SESSION['username'];
 // Validasi ekstensi
 $allowed_ext = ['jpg', 'jpeg', 'png', 'pdf', 'mp3', 'wav'];
 $max_size = 10 * 1024 * 1024; // 10 MB
+$stmt = $conn->prepare("SELECT SUM(size) as total FROM files WHERE user_id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$total = $stmt->get_result()->fetch_assoc()['total'] ?? 0;
+
+$stmt = $conn->prepare("SELECT storage_limit FROM users WHERE id = ?");
+$stmt->bind_param("i", $user_id);
+$stmt->execute();
+$limit = $stmt->get_result()->fetch_assoc()['storage_limit'];
+
+if ($total + $file_size > $limit) {
+    echo "Gagal: Melebihi batas penyimpanan kamu.";
+    exit;
+}
 
 if (!isset($_FILES['file'])) {
     echo "Tidak ada file diunggah.";
