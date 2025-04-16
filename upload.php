@@ -1,51 +1,53 @@
 <?php
-require_once 'includes/config.php';
-require_once 'includes/auth.php';
-require_once 'includes/file.php';
+session_start();
+require 'config/db.php';
 
-if (!isLoggedIn()) {
-    header("Location: login.php");
-    exit();
+if (!isset($_SESSION['user'])) {
+  die("Unauthorized");
 }
 
-$username = $_SESSION['username'];
-$error = '';
-if (isset($_POST['upload'])) {
-    if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
-        $result = uploadFile($username, $_FILES['file']);
-        if ($result === true) {
-            header("Location: index.php?upload_success=1");
-            exit();
-        } else {
-            $error = $result;
-        }
-    } else {
-        $error = "Silakan pilih file yang valid!";
-    }
+$user = $_SESSION['user'];
+$username = $user['username'];
+$user_id = $user['id'];
+
+$allowed_ext = ['jpg', 'png', 'pdf', 'docx', 'txt'];
+$max_size = 5 * 1024 * 1024; // 5 MB
+
+if ($_FILES['file']) {
+  $file = $_FILES['file'];
+  $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+  // Validasi ekstensi
+  if (!in_array($ext, $allowed_ext)) {
+    die("Ekstensi file tidak diizinkan.");
+  }
+
+  // Validasi ukuran
+  if ($file['size'] > $max_size) {
+    die("Ukuran file terlalu besar (maks. 5 MB).");
+  }
+
+  // Cek apakah melebihi limit storage
+  $stmt = $pdo->prepare("SELECT SUM(size) as total FROM files WHERE user_id = ?");
+  $stmt->execute([$user_id]);
+  $total_used = $stmt->fetch()['total'] ?? 0;
+
+  if ($total_used + $file['size'] > $user['storage_limit']) {
+    die("Storage Anda penuh. Tidak bisa upload file.");
+  }
+
+  // Simpan file
+  $upload_dir = "uploads/$username/";
+  if (!file_exists($upload_dir)) {
+    mkdir($upload_dir, 0777, true);
+  }
+
+  $target_file = $upload_dir . basename($file['name']);
+  move_uploaded_file($file['tmp_name'], $target_file);
+
+  // Simpan ke database
+  $stmt = $pdo->prepare("INSERT INTO files (user_id, filename, filepath, size) VALUES (?, ?, ?, ?)");
+  $stmt->execute([$user_id, $file['name'], $target_file, $file['size']]);
+
+  header("Location: dashboard.php");
 }
-?>
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Upload File - Cloud Storage</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Upload File</h1>
-        <?php if ($error): ?>
-            <div class="alert error"><?= $error ?></div>
-        <?php endif; ?>
-        <form method="POST" enctype="multipart/form-data">
-            <div class="form-group">
-                <label>Pilih File (Max 10MB):</label>
-                <input type="file" name="file" required>
-            </div>
-            <div class="form-actions">
-                <button type="submit" name="upload" class="btn">Upload</button>
-                <a href="index.php" class="btn secondary">Kembali</a>
-            </div>
-        </form>
-    </div>
-</body>
-</html>

@@ -1,24 +1,24 @@
 <?php
-require_once 'includes/config.php';
-require_once 'includes/auth.php';
-require_once 'includes/file.php';
+session_start();
+require 'config/db.php';
 
-if (!isLoggedIn()) {
-    header("Location: login.php");
-    exit();
+if (!isset($_SESSION['user'])) {
+  die("Unauthorized");
 }
 
-if (isset($_GET['id'])) {
-    $file_id = $_GET['id'];
-    $username = $_SESSION['username'];
-    
-    if (deleteFile($file_id, $username)) {
-        header("Location: index.php?delete_success=1");
-    } else {
-        header("Location: index.php?delete_error=1");
-    }
-    exit();
+$user_id = $_SESSION['user']['id'];
+$file_id = $_POST['id'] ?? 0;
+
+$stmt = $pdo->prepare("SELECT * FROM files WHERE id = ? AND user_id = ?");
+$stmt->execute([$file_id, $user_id]);
+$file = $stmt->fetch();
+
+if ($file) {
+  if (file_exists($file['filepath'])) {
+    unlink($file['filepath']);
+  }
+
+  $pdo->prepare("DELETE FROM files WHERE id = ?")->execute([$file_id]);
 }
 
-header("Location: index.php");
-?>
+header("Location: dashboard.php");
