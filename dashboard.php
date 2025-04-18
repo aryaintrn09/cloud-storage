@@ -35,6 +35,27 @@ if ($search) {
         return stripos($file, $search) !== false; // Mencari file yang cocok dengan query pencarian
     });
 }
+
+$files_info = [];
+foreach ($files as $file) {
+    $file_path = $user_folder . '/' . $file;
+    $file_size = filesize($file_path); // Mendapatkan ukuran file
+    $file_date = date("Y-m-d H:i:s", filemtime($file_path)); // Mendapatkan tanggal upload (waktu terakhir file diubah)
+    $files_info[] = [
+        'name' => $file,
+        'size' => $file_size,
+        'date' => $file_date,
+    ];
+}
+
+// Fungsi untuk memformat ukuran file ke format yang lebih mudah dibaca (KB, MB, GB, dll)
+function formatBytes($bytes, $decimals = 2) {
+    if ($bytes == 0) return '0 Bytes';
+    $k = 1024;
+    $sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    $i = floor(log($bytes) / log($k));
+    return round($bytes / pow($k, $i), $decimals) . ' ' . $sizes[$i];
+}
 ?>
 
 <!DOCTYPE html>
@@ -57,6 +78,10 @@ if ($search) {
         }
         .container {
             margin-top: 20px;
+        }
+        .file-info {
+            font-size: 0.85rem;
+            color: gray;
         }
     </style>
 </head>
@@ -104,17 +129,22 @@ if ($search) {
 
         <h3>Files</h3>
         <div class="list-group">
-            <?php if (empty($files)): ?>
+            <?php if (empty($files_info)): ?>
                 <div class="alert alert-warning">No files found matching your search.</div>
             <?php else: ?>
-                <?php foreach ($files as $file): ?>
+                <?php foreach ($files_info as $file_info): ?>
                     <div class="list-group-item file-item">
-                        <span><?= $file ?></span>
+                        <div>
+                            <span><?= $file_info['name'] ?></span>
+                            <div class="file-info">
+                                <span><?= formatBytes($file_info['size']) ?> | Uploaded on <?= $file_info['date'] ?></span>
+                            </div>
+                        </div>
                         <div class="btn-group">
-                            <button class="btn btn-warning btn-sm" onclick="showRenameModal('<?= $file ?>')">Rename</button>
-                            <button class="btn btn-danger btn-sm" onclick="showDeleteModal('<?= $file ?>')">Delete</button>
-                            <button class="btn btn-info btn-sm" onclick="previewFile('<?= $file ?>')">Preview</button>
-                            <button class="btn btn-success btn-sm" onclick="downloadFile('<?= $file ?>')">Download</button>
+                            <button class="btn btn-warning btn-sm" onclick="showRenameModal('<?= $file_info['name'] ?>')">Rename</button>
+                            <button class="btn btn-danger btn-sm" onclick="showDeleteModal('<?= $file_info['name'] ?>')">Delete</button>
+                            <button class="btn btn-info btn-sm" onclick="previewFile('<?= $file_info['name'] ?>')">Preview</button>
+                            <button class="btn btn-success btn-sm" onclick="downloadFile('<?= $file_info['name'] ?>')">Download</button>
                         </div>
                     </div>
                 <?php endforeach; ?>
