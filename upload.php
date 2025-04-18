@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file'])) {
     }
 
     // Tentukan ekstensi file yang diizinkan
-    $allowed_extensions = ['jpg', 'jpeg', 'png', 'pdf', 'mp4', 'mp3', 'docx', 'xlsx', 'txt'];
+    $allowed_extensions = ['jpg', 'jpeg', 'png', 'pdf', 'mp4', 'mp3', 'docx', 'xlsx', 'txt', 'zip', 'rar'];
     $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
     // Cek apakah ekstensi file valid
