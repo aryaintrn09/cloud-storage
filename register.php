@@ -1,85 +1,58 @@
 <?php
-session_start();
-if (isset($_SESSION['user_id'])) {
-  header("Location: dashboard.php");
-  exit();
-}
+require 'config.php';
 
-require 'includes/db.php';
-
-$error = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-  $username = trim($_POST['username']);
-  $email = trim($_POST['email']);
-  $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+    $password_confirm = $_POST['password_confirm'];
 
-  // Validasi
-  if (empty($username) || empty($email) || empty($_POST['password'])) {
-    $error = "Semua field harus diisi.";
-  } else {
-    $check = $conn->prepare("SELECT id FROM users WHERE email = ?");
-    $check->bind_param("s", $email);
-    $check->execute();
-    $check->store_result();
-
-    if ($check->num_rows > 0) {
-      $error = "Email sudah terdaftar.";
+    // Validasi jika password dan password confirm cocok
+    if ($password != $password_confirm) {
+        $error = "Passwords do not match!";
     } else {
-      $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-      $stmt->bind_param("sss", $username, $email, $password);
-      $stmt->execute();
+        // Enkripsi password
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-      // Buat folder untuk user
-      if (!file_exists("uploads/$username")) {
-        mkdir("uploads/$username", 0777, true);
-      }
-
-      header("Location: index.php");
-      exit();
+        // Masukkan data pengguna ke dalam database
+        $sql = "INSERT INTO users (username, password) VALUES ('$username', '$hashed_password')";
+        if ($conn->query($sql) === TRUE) {
+            echo "<div class='alert alert-success'>Registration successful! <a href='login.php'>Login here</a></div>";
+        } else {
+            $error = "Error: " . $conn->error;
+        }
     }
-  }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Register - Cloud Storage</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="bg-light">
-<div class="container">
-  <div class="row justify-content-center align-items-center" style="height:100vh;">
-    <div class="col-md-5">
-      <div class="card shadow-lg">
-        <div class="card-body">
-          <h3 class="text-center mb-4">Register</h3>
-          <?php if ($error): ?>
-            <div class="alert alert-danger"><?= $error ?></div>
-          <?php endif; ?>
-          <form method="post">
+<body>
+    <div class="container mt-5">
+        <h2>Register</h2>
+        <?php if (isset($error)) { echo "<div class='alert alert-danger'>$error</div>"; } ?>
+        <form action="register.php" method="post">
             <div class="mb-3">
-              <label>Username</label>
-              <input type="text" name="username" class="form-control" required>
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required>
             </div>
             <div class="mb-3">
-              <label>Email</label>
-              <input type="email" name="email" class="form-control" required>
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
             </div>
             <div class="mb-3">
-              <label>Password</label>
-              <input type="password" name="password" class="form-control" required>
+                <label for="password_confirm" class="form-label">Confirm Password</label>
+                <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
             </div>
-            <button class="btn btn-success w-100">Register</button>
-          </form>
-          <p class="text-center mt-3">
-            Sudah punya akun? <a href="index.php">Login di sini</a>
-          </p>
-        </div>
-      </div>
+            <button type="submit" class="btn btn-primary">Register</button>
+        </form>
+        <p class="mt-3">Already have an account? <a href="login.php">Login here</a></p>
     </div>
-  </div>
-</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

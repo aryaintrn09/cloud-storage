@@ -1,54 +1,84 @@
 <?php
-require 'includes/auth.php';
-require 'includes/db.php';
+session_start();
+require 'config.php';
 
+// Cek apakah pengguna sudah login
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+$user_id = $_SESSION['user_id'];
+
+// Ambil nama pengguna berdasarkan user_id
+$sql = "SELECT username FROM users WHERE id='$user_id'";
+$result = $conn->query($sql);
+$user = $result->fetch_assoc();
+$username = $user['username'];
+
+// Tentukan folder tujuan penyimpanan
+$user_folder = "uploads/$username";
+if (!is_dir($user_folder)) {
+    mkdir($user_folder, 0777, true);  // Membuat folder jika belum ada
+}
+
+// Proses file upload
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['file'])) {
-  $username = $_SESSION['username'];
-  $dir = "uploads/$username";
+    $file = $_FILES['file'];
+    $file_name = $file['name'];
+    $file_tmp = $file['tmp_name'];
+    $file_size = $file['size'];
+    $file_error = $file['error'];
 
-  // Buat folder user jika belum ada
-  if (!is_dir($dir)) {
-    mkdir($dir, 0777, true);
-  }
+    // Tentukan folder tujuan berdasarkan pilihan pengguna
+    $folder = isset($_POST['folder']) && !empty($_POST['folder']) ? $_POST['folder'] : ''; 
+    $upload_folder = $user_folder;  // Default folder adalah folder utama
 
-  $file = $_FILES['file'];
-  $fileName = basename($file['name']);
-  $fileTmp = $file['tmp_name'];
-  $fileSize = $file['size'];
-  $fileError = $file['error'];
+    // Jika pengguna memilih folder, tentukan folder tujuan upload
+    if (!empty($folder)) {
+        $upload_folder .= '/' . $folder;
+        if (!is_dir($upload_folder)) {
+            mkdir($upload_folder, 0777, true);  // Membuat folder jika belum ada
+        }
+    }
 
-  // Validasi apakah ada error pada upload
-  if ($fileError !== UPLOAD_ERR_OK) {
-    die("Terjadi kesalahan saat mengunggah file.");
-  }
+    // Tentukan ekstensi file yang diizinkan
+    $allowed_extensions = ['jpg', 'jpeg', 'png', 'pdf', 'mp4', 'mp3', 'docx', 'xlsx', 'txt'];
+    $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
-  // Validasi ukuran file (maksimal 10MB)
-  if ($fileSize > 10 * 1024 * 1024) {
-    die("Ukuran file terlalu besar. Maksimal 10MB.");
-  }
+    // Cek apakah ekstensi file valid
+    if (in_array($file_ext, $allowed_extensions)) {
+        // Cek apakah file tidak ada error
+        if ($file_error === 0) {
+            // Tentukan path file tujuan
+            $file_dest = $upload_folder . '/' . $file_name;
 
-  // Validasi ekstensi file
-  $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf', 'mp3'];
-  $fileExt = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-  if (!in_array($fileExt, $allowedExtensions)) {
-    die("Ekstensi file tidak didukung.");
-  }
+            // Cek jika file dengan nama yang sama sudah ada di server
+            if (file_exists($file_dest)) {
+                // Jika file sudah ada, tambahkan timestamp untuk menghindari duplikasi
+                $file_name = time() . '-' . $file_name;
+                $file_dest = $upload_folder . '/' . $file_name;
+            }
 
-  // Tentukan path penyimpanan file
-  $filePath = $dir . '/' . $fileName;
-
-  // Cek apakah file sudah ada
-  if (file_exists($filePath)) {
-    die("File sudah ada di server.");
-  }
-
-  // Pindahkan file ke folder yang sesuai
-  if (move_uploaded_file($fileTmp, $filePath)) {
-    echo json_encode(['status' => 'success', 'message' => 'File berhasil diunggah!']);
-  } else {
-    echo json_encode(['status' => 'error', 'message' => 'Gagal mengunggah file.']);
-  }
-} else {
-  echo json_encode(['status' => 'error', 'message' => 'Tidak ada file yang dipilih.']);
+            // Pindahkan file ke direktori yang ditentukan
+            if (move_uploaded_file($file_tmp, $file_dest)) {
+                // Simpan informasi file ke database jika perlu
+                $sql = "INSERT INTO files (filename, file_path, user_id) VALUES ('$file_name', '$file_dest', '$user_id')";
+                if ($conn->query($sql) === TRUE) {
+                    // Redirect ke dashboard setelah upload berhasil
+                    header("Location: dashboard.php?upload_success=true");
+                    exit;
+                } else {
+                    echo "Error: " . $conn->error;
+                }
+            } else {
+                echo "Failed to upload the file.";
+            }
+        } else {
+            echo "There was an error uploading the file.";
+        }
+    } else {
+        echo "Invalid file type.";
+    }
 }
 ?>
