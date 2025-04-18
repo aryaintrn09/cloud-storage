@@ -49,6 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <button type="submit" class="btn btn-primary">Login</button>
         </form>
         <p class="mt-3">Don't have an account? <a href="register.php">Register here</a></p>
+        <p class="mt-3"><a href="forgot-password.php">Forgot Password?</a></p>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
