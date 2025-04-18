@@ -24,7 +24,17 @@ if (!is_dir($user_folder)) {
 $files = array_diff(scandir($user_folder), array('.', '..'));
 
 // Check for successful file upload through query string
-//  
+$upload_success = isset($_GET['upload_success']) && $_GET['upload_success'] == 'true';
+
+// Proses pencarian file jika ada query parameter 'search'
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+
+// Filter file berdasarkan pencarian
+if ($search) {
+    $files = array_filter($files, function($file) use ($search) {
+        return stripos($file, $search) !== false; // Mencari file yang cocok dengan query pencarian
+    });
+}
 ?>
 
 <!DOCTYPE html>
@@ -34,7 +44,6 @@ $files = array_diff(scandir($user_folder), array('.', '..'));
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cloud Storage</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> <!-- Font Awesome -->
     <style>
         .file-item {
             display: flex;
@@ -49,27 +58,11 @@ $files = array_diff(scandir($user_folder), array('.', '..'));
         .container {
             margin-top: 20px;
         }
-        /* Dark Mode Custom Styles */
-        body.dark-mode {
-            background-color: #121212;
-            color: white;
-        }
-        .navbar-dark-mode {
-            background-color: #333;
-        }
-        .btn-dark-mode {
-            background-color: #6c757d;
-            color: white;
-        }
-        .btn-dark-mode:hover {
-            background-color: #5a6268;
-        }
     </style>
 </head>
-<body id="body" class="light-mode">
-
+<body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark navbar-dark-mode">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">Cloud Storage</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,11 +76,6 @@ $files = array_diff(scandir($user_folder), array('.', '..'));
                     <li class="nav-item">
                         <a class="nav-link" href="logout.php">Logout</a>
                     </li>
-                    <li class="nav-item">
-                        <button class="btn btn-dark-mode" id="toggleModeBtn">
-                            <i id="modeIcon" class="fas fa-moon"></i> <!-- Icon moon by default -->
-                        </button>
-                    </li>
                 </ul>
             </div>
         </div>
@@ -95,6 +83,14 @@ $files = array_diff(scandir($user_folder), array('.', '..'));
 
     <div class="container">
         <h2>Your Files</h2>
+
+        <!-- Search Form -->
+        <form action="dashboard.php" method="GET" class="mb-3">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control" placeholder="Search for files" value="<?= htmlspecialchars($search) ?>">
+                <button type="submit" class="btn btn-outline-secondary">Search</button>
+            </div>
+        </form>
         
         <!-- Upload Form -->
         <form action="upload.php" method="post" enctype="multipart/form-data">
@@ -108,17 +104,21 @@ $files = array_diff(scandir($user_folder), array('.', '..'));
 
         <h3>Files</h3>
         <div class="list-group">
-            <?php foreach ($files as $file): ?>
-                <div class="list-group-item file-item">
-                    <span><?= $file ?></span>
-                    <div class="btn-group">
-                        <button class="btn btn-warning btn-sm" onclick="showRenameModal('<?= $file ?>')">Rename</button>
-                        <button class="btn btn-danger btn-sm" onclick="showDeleteModal('<?= $file ?>')">Delete</button>
-                        <button class="btn btn-info btn-sm" onclick="previewFile('<?= $file ?>')">Preview</button>
-                        <button class="btn btn-success btn-sm" onclick="downloadFile('<?= $file ?>')">Download</button>
+            <?php if (empty($files)): ?>
+                <div class="alert alert-warning">No files found matching your search.</div>
+            <?php else: ?>
+                <?php foreach ($files as $file): ?>
+                    <div class="list-group-item file-item">
+                        <span><?= $file ?></span>
+                        <div class="btn-group">
+                            <button class="btn btn-warning btn-sm" onclick="showRenameModal('<?= $file ?>')">Rename</button>
+                            <button class="btn btn-danger btn-sm" onclick="showDeleteModal('<?= $file ?>')">Delete</button>
+                            <button class="btn btn-info btn-sm" onclick="previewFile('<?= $file ?>')">Preview</button>
+                            <button class="btn btn-success btn-sm" onclick="downloadFile('<?= $file ?>')">Download</button>
+                        </div>
                     </div>
-                </div>
-            <?php endforeach; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -196,44 +196,6 @@ $files = array_diff(scandir($user_folder), array('.', '..'));
         <?php if ($upload_success): ?>
             showToast('File Uploaded', 'Your file has been successfully uploaded!');
         <?php endif; ?>
-
-        // Function to toggle dark mode
-        function toggleDarkMode() {
-            let body = document.getElementById('body');
-            let navbar = document.querySelector('.navbar');
-            let button = document.getElementById('toggleModeBtn');
-            let icon = document.getElementById('modeIcon');
-            
-            // Toggle between light and dark mode
-            if (body.classList.contains('light-mode')) {
-                body.classList.remove('light-mode');
-                body.classList.add('dark-mode');
-                navbar.classList.add('navbar-dark-mode');
-                icon.classList.remove('fa-moon');
-                icon.classList.add('fa-sun');
-                button.classList.add('btn-dark-mode');
-                localStorage.setItem('theme', 'dark');
-            } else {
-                body.classList.remove('dark-mode');
-                body.classList.add('light-mode');
-                navbar.classList.remove('navbar-dark-mode');
-                icon.classList.remove('fa-sun');
-                icon.classList.add('fa-moon');
-                button.classList.remove('btn-dark-mode');
-                localStorage.setItem('theme', 'light');
-            }
-        }
-
-        // Check local storage for theme preference
-        window.onload = function() {
-            let savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
-                toggleDarkMode();
-            }
-        };
-
-        // Event listener for dark mode toggle button
-        document.getElementById('toggleModeBtn').addEventListener('click', toggleDarkMode);
 
         // Function to show the Rename Modal and set the current filename
         function showRenameModal(filename) {
