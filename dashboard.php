@@ -66,6 +66,40 @@ function formatBytes($bytes, $decimals = 2) {
     <title>Cloud Storage</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        body.dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        .dark-mode .navbar {
+            background-color: #1f1f1f !important;
+        }
+
+        .dark-mode .list-group-item {
+            background-color: #2c2c2c;
+            color: #ffffff;
+            border-color: #444;
+        }
+
+        .dark-mode .modal-content {
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+
+        .dark-mode .form-control {
+            background-color: #2c2c2c;
+            color: #ffffff;
+            border-color: #444;
+        }
+
+        .dark-mode .btn-close {
+            filter: invert(1);
+        }
+
+        .dark-mode .toast {
+            background-color: #2c2c2c;
+            color: #fff;
+        }
         .file-item {
             display: flex;
             justify-content: space-between;
@@ -93,6 +127,18 @@ function formatBytes($bytes, $decimals = 2) {
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item d-flex align-items-center ms-3">
+                        <div class="form-check form-switch text-white">
+                            <input class="form-check-input" type="checkbox" id="darkModeToggle">
+                            <label class="form-check-label" for="darkModeToggle">
+                                <span id="modeIcon">🌞</span> <!-- Sun emoji for light mode -->
+                            </label>
+                        </div>
+                    </li>
+                </ul>
+            </div>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
@@ -322,6 +368,19 @@ function formatBytes($bytes, $decimals = 2) {
         $('#renameForm').on('submit', function(e) {
             e.preventDefault();
             renameFile();
+        });
+
+        // Toggle dark mode and save the preference to localStorage
+        darkModeToggle.addEventListener('change', function () {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('darkMode', this.checked);
+
+            // Change the emoji based on the new state
+            if (this.checked) {
+                modeIcon.textContent = '🌙'; // Moon emoji for dark mode
+            } else {
+                modeIcon.textContent = '🌞'; // Sun emoji for light mode
+            }
         });
     </script>
 </body>
